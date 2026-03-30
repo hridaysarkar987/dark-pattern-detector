@@ -83,10 +83,4 @@ dark-pattern-detector/
 3. **background.js** calls `claude-sonnet` with a structured prompt asking it to classify each element as a dark pattern or not, with category + severity
 4. Results are sent back to **content.js** which injects CSS highlights + labels onto matching elements
 
----
 
-## ⚠️ Notes
-
-- Your API key is stored locally in Chrome's storage — never sent anywhere except directly to Anthropic's API
-- Works best on e-commerce and subscription pages
-- AI analysis uses `claude-sonnet-4-20250514` for best accuracy
