@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dark Pattern Detector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0f;
+      --surface: #141417;
+      --surface2: #1c1c21;
+      --border: #2a2a32;
+      --red: #ff3b3b;
+      --red-dim: rgba(255,59,59,0.12);
+      --orange: #ff8c00;
+      --orange-dim: rgba(255,140,0,0.12);
+      --green: #00e5a0;
+      --green-dim: rgba(0,229,160,0.1);
+      --text: #f0f0f5;
+      --muted: #6b6b80;
+      --accent: #ff3b3b;
+    }
+
+    body {
+      width: 360px;
+      min-height: 200px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Header ──────────────────────────────────────────── */
+    .header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -30px; right: -30px;
+      width: 100px; height: 100px;
+      background: radial-gradient(circle, rgba(255,59,59,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .logo {
+      width: 28px; height: 28px;
+      background: var(--red);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .title {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: var(--text);
+    }
+    .subtitle {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── API Key Section ──────────────────────────────────── */
+    .api-section {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .api-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      font-family: 'Space Mono', monospace;
+      margin-bottom: 8px;
+    }
+    .api-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .api-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-family: 'Space Mono', monospace;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .api-input:focus { border-color: var(--red); }
+    .api-input::placeholder { color: var(--muted); }
+    .save-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: 'Space Mono', monospace;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .save-btn:hover { border-color: var(--green); color: var(--green); }
+    .save-btn.saved { border-color: var(--green); color: var(--green); }
+
+    /* ── Main Action ──────────────────────────────────────── */
+    .action-section {
+      padding: 16px 20px;
+    }
+    .scan-btn {
+      width: 100%;
+      padding: 13px;
+      background: var(--red);
+      border: none;
+      border-radius: 10px;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      letter-spacing: 0.2px;
+    }
+    .scan-btn:hover:not(:disabled) {
+      background: #ff5555;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(255,59,59,0.35);
+    }
+    .scan-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .scan-btn.scanning {
+      background: var(--surface2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .clear-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 9px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .clear-btn:hover { border-color: var(--muted); color: var(--text); }
+
+    /* ── Score Badge ──────────────────────────────────────── */
+    .score-section {
+      padding: 0 20px 16px;
+      display: none;
+    }
+    .score-section.visible { display: block; }
+    .score-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .score-circle {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-family: 'Space Mono', monospace;
+      flex-shrink: 0;
+    }
+    .score-circle.clean {
+      background: var(--green-dim);
+      border: 2px solid var(--green);
+    }
+    .score-circle.warn {
+      background: var(--orange-dim);
+      border: 2px solid var(--orange);
+    }
+    .score-circle.danger {
+      background: var(--red-dim);
+      border: 2px solid var(--red);
+    }
+    .score-num {
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .score-circle.clean .score-num { color: var(--green); }
+    .score-circle.warn .score-num { color: var(--orange); }
+    .score-circle.danger .score-num { color: var(--red); }
+    .score-label {
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.7;
+    }
+    .score-info { flex: 1; }
+    .score-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+    .score-desc {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      line-height: 1.4;
+    }
+
+    /* ── Results List ─────────────────────────────────────── */
+    .results-section {
+      padding: 0 20px 16px;
+      display: none;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .results-section.visible { display: block; }
+    .results-section::-webkit-scrollbar { width: 4px; }
+    .results-section::-webkit-scrollbar-track { background: transparent; }
+    .results-section::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .results-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      font-family: 'Space Mono', monospace;
+      margin-bottom: 10px;
+    }
+
+    .result-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 13px;
+      margin-bottom: 8px;
+      transition: border-color 0.2s;
+    }
+    .result-item:hover { border-color: #3a3a45; }
+    .result-item.high { border-left: 3px solid var(--red); }
+    .result-item.medium { border-left: 3px solid var(--orange); }
+
+    .result-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    .result-label {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .result-item.high .result-label { color: var(--red); }
+    .result-item.medium .result-label { color: var(--orange); }
+
+    .result-sev {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: 'Space Mono', monospace;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .result-item.high .result-sev {
+      background: var(--red-dim);
+      color: var(--red);
+    }
+    .result-item.medium .result-sev {
+      background: var(--orange-dim);
+      color: var(--orange);
+    }
+
+    .result-text {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .result-explanation {
+      font-size: 11px;
+      color: #8888a0;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    /* ── Status / Error ───────────────────────────────────── */
+    .status {
+      padding: 0 20px 14px;
+      font-size: 11px;
+      font-family: 'Space Mono', monospace;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+    }
+    .status.visible { display: flex; }
+    .status.error { color: var(--red); }
+    .status.success { color: var(--green); }
+
+    /* ── Spinner ──────────────────────────────────────────── */
+    .spinner {
+      width: 12px; height: 12px;
+      border: 2px solid var(--border);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── No patterns found ────────────────────────────────── */
+    .clean-msg {
+      padding: 0 20px 16px;
+      display: none;
+      text-align: center;
+    }
+    .clean-msg.visible { display: block; }
+    .clean-emoji { font-size: 28px; margin-bottom: 6px; }
+    .clean-text {
+      font-size: 12px;
+      color: var(--green);
+      font-family: 'Space Mono', monospace;
+    }
+    .clean-sub {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 4px;
+      font-family: 'Space Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">🕵️</div>
+      <div>
+        <div class="title">Dark Pattern Detector</div>
+      </div>
+    </div>
+    <div class="subtitle">AI-powered manipulation scanner</div>
+  </div>
+
+  <!-- API Key -->
+  <div class="api-section">
+    <div class="api-label">Gemini API Key (Free)</div>
+    <div class="api-row">
+      <input type="password" class="api-input" id="apiKey" placeholder="AIza..." />
+      <button class="save-btn" id="saveKey">Save</button>
+    </div>
+  </div>
+
+  <!-- Action -->
+  <div class="action-section">
+    <button class="scan-btn" id="scanBtn">
+      <span id="scanIcon">🔍</span>
+      <span id="scanText">Scan This Page</span>
+    </button>
+    <button class="clear-btn" id="clearBtn" style="display:none">Clear Highlights</button>
+  </div>
+
+  <!-- Status -->
+  <div class="status" id="status">
+    <div class="spinner" id="spinner"></div>
+    <span id="statusText">Scanning page...</span>
+  </div>
+
+  <!-- Score -->
+  <div class="score-section" id="scoreSection">
+    <div class="score-card">
+      <div class="score-circle" id="scoreCircle">
+        <span class="score-num" id="scoreNum">0</span>
+        <span class="score-label">found</span>
+      </div>
+      <div class="score-info">
+        <div class="score-title" id="scoreTitle">—</div>
+        <div class="score-desc" id="scoreDesc">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clean message -->
+  <div class="clean-msg" id="cleanMsg">
+    <div class="clean-emoji">✅</div>
+    <div class="clean-text">No dark patterns detected</div>
+    <div class="clean-sub">This page appears to be clean</div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-section" id="resultsSection">
+    <div class="results-label">Detected Patterns</div>
+    <div id="resultsList"></div>
+  </div>
+
+  <script src="src/popup.js"></script>
+</body>
+</html>
